@@ -19,7 +19,7 @@
     "express",
     "typescript"
   ],
-  "author": "Panuwat",
+  "author": "Phanuwat",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.19.3",

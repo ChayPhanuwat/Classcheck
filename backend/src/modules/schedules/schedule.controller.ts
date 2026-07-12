@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
-import { StudentService } from "./student.service";
+import { ScheduleService } from "./schedule.service";
 
-export class StudentController {
+export class ScheduleController {
   static async create(req: Request, res: Response) {
     try {
-      const student = await StudentService.create(req.body);
+      const schedule = await ScheduleService.create(req.body);
 
       return res.status(201).json({
         success: true,
-        data: student,
+        data: schedule,
       });
     } catch (error: any) {
       console.error(error);
@@ -22,11 +22,11 @@ export class StudentController {
 
   static async getAll(req: Request, res: Response) {
     try {
-      const students = await StudentService.getAll();
+      const schedules = await ScheduleService.getAll();
 
       return res.json({
         success: true,
-        data: students,
+        data: schedules,
       });
     } catch (error: any) {
       console.error(error);
@@ -42,18 +42,18 @@ export class StudentController {
     try {
       const id = BigInt(req.params.id as string);
 
-      const student = await StudentService.getById(id);
+      const schedule = await ScheduleService.getById(id);
 
-      if (!student) {
+      if (!schedule) {
         return res.status(404).json({
           success: false,
-          message: "Student not found",
+          message: "Schedule not found",
         });
       }
 
       return res.json({
         success: true,
-        data: student,
+        data: schedule,
       });
     } catch (error: any) {
       console.error(error);
@@ -69,11 +69,11 @@ export class StudentController {
     try {
       const id = BigInt(req.params.id as string);
 
-      const student = await StudentService.update(id, req.body);
+      const schedule = await ScheduleService.update(id, req.body);
 
       return res.json({
         success: true,
-        data: student,
+        data: schedule,
       });
     } catch (error: any) {
       console.error(error);
@@ -89,11 +89,11 @@ export class StudentController {
     try {
       const id = BigInt(req.params.id as string);
 
-      await StudentService.delete(id);
+      await ScheduleService.delete(id);
 
       return res.json({
         success: true,
-        message: "Student deleted successfully",
+        message: "Schedule deleted successfully",
       });
     } catch (error: any) {
       console.error(error);
