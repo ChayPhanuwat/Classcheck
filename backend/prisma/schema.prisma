@@ -96,14 +96,15 @@ model Student {
   lastName      String    @db.VarChar(100)
   gender        String?   @db.VarChar(20)
   birthDate     DateTime?
-  classroomId   BigInt
-  studentNumber Int
+
+  classroomId   BigInt?          // เปลี่ยนเป็น Optional
+  studentNumber Int?
   status        Boolean   @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  classroom Classroom @relation(fields: [classroomId], references: [id])
+  classroom Classroom? @relation(fields: [classroomId], references: [id])
 
   attendanceDetails AttendanceDetail[]
 

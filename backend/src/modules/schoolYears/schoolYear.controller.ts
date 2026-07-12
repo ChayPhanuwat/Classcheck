@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
-import { StudentService } from "./student.service";
+import { SchoolYearService } from "./schoolYear.service";
 
-export class StudentController {
+export class SchoolYearController {
   static async create(req: Request, res: Response) {
     try {
-      const student = await StudentService.create(req.body);
+      const schoolYear = await SchoolYearService.create(req.body);
 
       return res.status(201).json({
         success: true,
-        data: student,
+        data: schoolYear,
       });
     } catch (error: any) {
       console.error(error);
@@ -22,11 +22,11 @@ export class StudentController {
 
   static async getAll(req: Request, res: Response) {
     try {
-      const students = await StudentService.getAll();
+      const schoolYears = await SchoolYearService.getAll();
 
       return res.json({
         success: true,
-        data: students,
+        data: schoolYears,
       });
     } catch (error: any) {
       console.error(error);
@@ -42,18 +42,18 @@ export class StudentController {
     try {
       const id = BigInt(req.params.id as string);
 
-      const student = await StudentService.getById(id);
+      const schoolYear = await SchoolYearService.getById(id);
 
-      if (!student) {
+      if (!schoolYear) {
         return res.status(404).json({
           success: false,
-          message: "Student not found",
+          message: "School Year not found",
         });
       }
 
       return res.json({
         success: true,
-        data: student,
+        data: schoolYear,
       });
     } catch (error: any) {
       console.error(error);
@@ -69,11 +69,11 @@ export class StudentController {
     try {
       const id = BigInt(req.params.id as string);
 
-      const student = await StudentService.update(id, req.body);
+      const schoolYear = await SchoolYearService.update(id, req.body);
 
       return res.json({
         success: true,
-        data: student,
+        data: schoolYear,
       });
     } catch (error: any) {
       console.error(error);
@@ -89,11 +89,11 @@ export class StudentController {
     try {
       const id = BigInt(req.params.id as string);
 
-      await StudentService.delete(id);
+      await SchoolYearService.delete(id);
 
       return res.json({
         success: true,
-        message: "Student deleted successfully",
+        message: "School Year deleted successfully",
       });
     } catch (error: any) {
       console.error(error);

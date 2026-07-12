@@ -1,14 +1,14 @@
 import { prisma } from "../../../lib/prisma";
 
-export class StudentService {
+export class TeacherService {
   static async create(data: any) {
-    return await prisma.student.create({
+    return await prisma.teacher.create({
       data,
     });
   }
 
   static async getAll() {
-    return await prisma.student.findMany({
+    return await prisma.teacher.findMany({
       orderBy: {
         id: "asc",
       },
@@ -16,7 +16,7 @@ export class StudentService {
   }
 
   static async getById(id: bigint) {
-    return await prisma.student.findUnique({
+    return await prisma.teacher.findUnique({
       where: {
         id,
       },
@@ -24,7 +24,7 @@ export class StudentService {
   }
 
   static async update(id: bigint, data: any) {
-    return await prisma.student.update({
+    return await prisma.teacher.update({
       where: {
         id,
       },
@@ -33,7 +33,7 @@ export class StudentService {
   }
 
   static async delete(id: bigint) {
-    return await prisma.student.delete({
+    return await prisma.teacher.delete({
       where: {
         id,
       },
