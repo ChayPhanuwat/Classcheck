@@ -15,6 +15,7 @@ import subjectRoutes from "./modules/subjects/subject.routes";
 import scheduleRoutes from "./modules/schedules/schedule.routes";
 import attendanceRoutes from "./modules/attendance/attendance.routes";
 import roleRoutes from "./modules/roles/role.routes";
+import teacherImportRoutes from "./modules/teacherImport/teacherImport.routes";
 
 const app = express();
 
@@ -44,5 +45,6 @@ app.use("/subjects", subjectRoutes);
 app.use("/schedules", scheduleRoutes);
 app.use("/attendances", attendanceRoutes);
 app.use("/roles", roleRoutes);
+app.use("/api/import",teacherImportRoutes);
 
 export default app;
