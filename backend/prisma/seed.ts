@@ -3,6 +3,10 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
+
+  // =====================
+  // Create Roles
+  // =====================
   await prisma.role.createMany({
     data: [
       { roleName: "Admin", description: "System Administrator" },
@@ -13,6 +17,10 @@ async function main() {
     skipDuplicates: true,
   });
 
+
+  // =====================
+  // Create School Year
+  // =====================
   await prisma.schoolYear.createMany({
     data: [
       {
@@ -25,10 +33,23 @@ async function main() {
     skipDuplicates: true,
   });
 
-  const schoolYear = await prisma.schoolYear.findFirst();
 
-  if (!schoolYear) throw new Error("No school year found");
+  const schoolYear = await prisma.schoolYear.findFirst({
+    where: {
+      yearName: "2569"
+    }
+  });
 
+
+  if (!schoolYear) {
+    throw new Error("No school year found");
+  }
+
+
+
+  // =====================
+  // Create Semester
+  // =====================
   await prisma.semester.createMany({
     data: [
       {
@@ -49,14 +70,70 @@ async function main() {
     skipDuplicates: true,
   });
 
+
+
+  // =====================
+  // Create Classrooms
+  // =====================
+
+  const levels = [
+    "ม.1",
+    "ม.2",
+    "ม.3",
+    "ม.4",
+    "ม.5",
+    "ม.6"
+  ];
+
+
+  const classrooms = [];
+
+
+  for (const level of levels) {
+
+    for (let room = 1; room <= 5; room++) {
+
+      classrooms.push({
+
+        classroomName: `${level}/${room}`,
+
+        gradeLevel: level,
+
+        roomNumber: String(room),
+
+        schoolYearId: schoolYear.id
+
+      });
+
+    }
+
+  }
+
+
+  await prisma.classroom.createMany({
+    data: classrooms,
+    skipDuplicates: true,
+  });
+
+
+
   console.log("🌱 Seed completed successfully!");
+  console.log("✅ Created classrooms:", classrooms.length);
+
 }
+
+
 
 main()
   .catch((e) => {
+
     console.error(e);
+
     process.exit(1);
+
   })
   .finally(async () => {
+
     await prisma.$disconnect();
+
   });

@@ -16,7 +16,7 @@ import scheduleRoutes from "./modules/schedules/schedule.routes";
 import attendanceRoutes from "./modules/attendance/attendance.routes";
 import roleRoutes from "./modules/roles/role.routes";
 import teacherImportRoutes from "./modules/teacherImport/teacherImport.routes";
-
+import studentImportRoutes from "./modules/studentImport/studentImport.routes";
 const app = express();
 
 // แก้ปัญหา Prisma BigInt serialize JSON
@@ -46,5 +46,6 @@ app.use("/schedules", scheduleRoutes);
 app.use("/attendances", attendanceRoutes);
 app.use("/roles", roleRoutes);
 app.use("/api/import",teacherImportRoutes);
+app.use("/api/import",studentImportRoutes);
 
 export default app;
