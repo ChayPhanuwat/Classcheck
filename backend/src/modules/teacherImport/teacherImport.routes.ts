@@ -7,7 +7,7 @@ const router = express.Router();
 
 
 router.post(
- "/teachers",
+ "/",
  upload.single("file"),
  TeacherImportController.upload
 );
