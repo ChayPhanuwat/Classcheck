@@ -1,5 +1,8 @@
+import { Delete, Edit } from "@mui/icons-material";
 import {
   Box,
+  Card,
+  CardContent,
   Table,
   TableBody,
   TableCell,
@@ -180,79 +183,109 @@ export default function TeacherPage() {
 
   return (
     <Box>
-      <Typography
-        variant="h5"
-        sx={{
-          mb: 3,
-        }}
-      >
-        รายชื่อครู
-      </Typography>
-
+      {/* Header */}
       <Box
         sx={{
           display: "flex",
-
-          gap: 2,
-
-          mb: 2,
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
         }}
       >
-        <Button variant="contained" onClick={() => setOpen(true)}>
-          + เพิ่มครู
-        </Button>
+        <Typography variant="h4">ครู</Typography>
 
-        <Button variant="outlined" component="label">
-          {file ? file.name : "Import Excel"}
-
-          <input
-            hidden
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={(e) => {
-              if (e.target.files) {
-                setFile(e.target.files[0]);
-              }
-            }}
-          />
-        </Button>
-
-        <Button
-          variant="contained"
-          color="success"
-          disabled={!file}
-          onClick={handleImport}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+          }}
         >
-          นำเข้า
-        </Button>
+          <Button variant="contained" onClick={() => setOpen(true)}>
+            + เพิ่มครู
+          </Button>
+
+          <Button variant="outlined" component="label">
+            {file ? file.name : "Import Excel"}
+
+            <input
+              hidden
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={(e) => {
+                if (e.target.files) {
+                  setFile(e.target.files[0]);
+                }
+              }}
+            />
+          </Button>
+
+          <Button
+            variant="contained"
+            color="success"
+            disabled={!file}
+            onClick={handleImport}
+          >
+            นำเข้า
+          </Button>
+        </Box>
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>รหัสครู</TableCell>
+      {/* Card */}
+      <Card>
+        <CardContent>
+          <TextField
+            fullWidth
+            label="ค้นหาครู"
+            sx={{
+              mb: 3,
+            }}
+          />
 
-              <TableCell>ชื่อ-นามสกุล</TableCell>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>รหัสครู</TableCell>
 
-              <TableCell>ตำแหน่ง</TableCell>
-            </TableRow>
-          </TableHead>
+                  <TableCell>ชื่อ - นามสกุล</TableCell>
 
-          <TableBody>
-            {teachers.map((teacher) => (
-              <TableRow key={teacher.id}>
-                <TableCell>{teacher.teacherCode}</TableCell>
+                  <TableCell>ตำแหน่ง</TableCell>
 
-                <TableCell>{teacher.fullName || "-"}</TableCell>
+                  <TableCell align="center">จัดการ</TableCell>
+                </TableRow>
+              </TableHead>
 
-                <TableCell>{teacher.position}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              <TableBody>
+                {teachers.map((teacher) => (
+                  <TableRow key={teacher.id}>
+                    <TableCell>{teacher.teacherCode}</TableCell>
 
+                    <TableCell>{teacher.fullName}</TableCell>
+
+                    <TableCell>{teacher.position}</TableCell>
+
+                    <TableCell align="center">
+                      <Button
+                        color="warning"
+                        startIcon={<Edit />}
+                        sx={{ mr: 1 }}
+                      >
+                        แก้ไข
+                      </Button>
+
+                      <Button color="error" startIcon={<Delete />}>
+                        ลบ
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+
+      {/* Dialog */}
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>เพิ่มครู</DialogTitle>
 
@@ -265,7 +298,6 @@ export default function TeacherPage() {
             onChange={(e) =>
               setForm({
                 ...form,
-
                 fullname: e.target.value,
               })
             }
@@ -279,7 +311,6 @@ export default function TeacherPage() {
             onChange={(e) =>
               setForm({
                 ...form,
-
                 position: e.target.value,
               })
             }
