@@ -1,130 +1,83 @@
 import {
-    AppBar,
-    Toolbar,
-    Typography,
-    Box,
-    IconButton,
-    Menu,
-    MenuItem,
-    Avatar,
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  IconButton,
+  Menu,
+  MenuItem,
+  Avatar,
 } from "@mui/material";
-
-import {
-    useState
-} from "react";
-
-import {
-    useNavigate
-} from "react-router-dom";
-
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const drawerWidth = 240;
 
-
 export default function Topbar() {
+  const navigate = useNavigate();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-    const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
 
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
 
-    const user = JSON.parse(
-        localStorage.getItem("user") || "{}"
-    );
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
 
+  return (
+    <AppBar
+      position="fixed"
+      sx={{
+        width: `calc(100% - ${drawerWidth}px)`,
+        ml: `${drawerWidth}px`,
+        right: 0,
+      }}
+    >
+      <Toolbar>
+        {/* ตัวดันพื้นที่ว่างเพื่อให้เมนUpโปรไฟล์ไปอยู่ขวาสุด */}
+        <Box sx={{ flexGrow: 1 }} />
 
-    const handleMenu = (
-        event: React.MouseEvent<HTMLElement>
-    ) => {
-        setAnchorEl(event.currentTarget);
-    };
+        {/* เมนูผู้ใช้งานมุมขวา */}
+        <Box>
+          <IconButton onClick={handleMenu} color="inherit">
+            <Avatar sx={{ bgcolor: "secondary.main" }}>
+              {user.username?.charAt(0)?.toUpperCase() || "U"}
+            </Avatar>
+          </IconButton>
 
-
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
-
-
-    const logout = () => {
-
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-
-        navigate("/login");
-
-    };
-
-
-    return (
-
-        <AppBar
-            position="fixed"
-            sx={{
-                width:`calc(100% - ${drawerWidth}px)`,
-                ml:`${drawerWidth}px`,
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
             }}
-        >
-
-            <Toolbar>
-
-
-                <Typography
-                    variant="h6"
-                    sx={{
-                        flexGrow:1
-                    }}
-                >
-                    ClassCheck
-                </Typography>
-
-
-
-                <Box>
-
-                    <IconButton
-                        onClick={handleMenu}
-                        color="inherit"
-                    >
-
-                        <Avatar>
-                            {
-                                user.username
-                                ?.charAt(0)
-                                ?.toUpperCase()
-                            }
-                        </Avatar>
-
-                    </IconButton>
-
-
-                    <Menu
-                        anchorEl={anchorEl}
-                        open={Boolean(anchorEl)}
-                        onClose={handleClose}
-                    >
-
-                        <MenuItem disabled>
-                            {user.username}
-                        </MenuItem>
-
-
-                        <MenuItem
-                            onClick={logout}
-                        >
-                            Logout
-                        </MenuItem>
-
-
-                    </Menu>
-
-
-                </Box>
-
-
-            </Toolbar>
-
-
-        </AppBar>
-
-    );
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <MenuItem disabled sx={{ opacity: "1 !important", color: "text.primary" }}>
+              <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                {user.username || "Unknown User"}
+              </Typography>
+            </MenuItem>
+            <MenuItem onClick={logout} sx={{ color: "error.main" }}>
+              ออกจากระบบ
+            </MenuItem>
+          </Menu>
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
 }

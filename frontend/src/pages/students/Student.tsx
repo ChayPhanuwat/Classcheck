@@ -16,6 +16,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { Add, Edit, Delete } from "@mui/icons-material";
 import { useEffect, useState } from "react";
@@ -24,16 +28,27 @@ import { useEffect, useState } from "react";
 // Type Definition
 // =====================
 interface Classroom {
-  id: number;
-  name: string;
+  id: string | number;
+  classroomName: string;
+  gradeLevel?: string;
+  roomNumber?: string | number;
 }
 
 interface StudentType {
-  id: number;
+  id: string | number;
   studentCode?: string;
   code?: string;
   fullName: string;
+  classroomId?: string | number;
   classroom?: Classroom;
+}
+
+interface UserType {
+  id?: string | number;
+  username?: string;
+  role?: string;
+  teacherId?: string | number;
+  [key: string]: unknown;
 }
 
 // =====================
@@ -42,50 +57,71 @@ interface StudentType {
 export default function Student() {
   const [file, setFile] = useState<File | null>(null);
   const [students, setStudents] = useState<StudentType[]>([]);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     studentCode: "",
     fullName: "",
-    classroomId: 0,
+    classroomId: "",
   });
 
+  const [importClassroomId, setImportClassroomId] = useState<string>("");
+
+  // ดึงข้อมูล User ที่ล็อกอินอยู่จาก localStorage
+  const currentUser: UserType = JSON.parse(localStorage.getItem("user") || "{}");
+
   // =====================
-  // Load Students
+  // Fetch Data 
   // =====================
   const fetchStudents = async (): Promise<void> => {
     try {
-      const res = await fetch("http://localhost:3000/students");
+      const teacherId = currentUser.teacherId;
+      const role = currentUser.role;
+
+      // สร้าง URL สำหรับดึงข้อมูลนักเรียน
+      let url = "http://localhost:3000/students";
+      
+      // ถ้าเป็น Teacher ให้แนบ teacherId ไปด้วย เพื่อให้ Backend กรองเฉพาะของครูคนนั้น
+      if (role === "Teacher" && teacherId) {
+        url += `?teacherId=${teacherId}`;
+      }
+
+      const res = await fetch(url);
       const data = await res.json();
-      const studentList: StudentType[] = data.data ?? data;
-      setStudents(studentList);
+      setStudents(data.data ?? data);
     } catch (error) {
-      console.error(error);
+      console.error("Fetch Students Error:", error);
+    }
+  };
+
+  const fetchClassrooms = async (): Promise<void> => {
+    try {
+      const res = await fetch("http://localhost:3000/classrooms");
+      const data = await res.json();
+      setClassrooms(data.data ?? data);
+    } catch (error) {
+      console.error("Fetch Classrooms Error:", error);
     }
   };
 
   useEffect(() => {
-    let mounted = true;
-    const loadStudents = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/students");
-        const data = await res.json();
-        if (mounted) {
-          setStudents(data.data ?? data);
-        }
-      } catch (error) {
-        console.error(error);
-      }
+    const loadAllData = async () => {
+      await fetchClassrooms();
+      await fetchStudents();
     };
-    loadStudents();
-    return () => {
-      mounted = false;
-    };
+    loadAllData();
   }, []);
 
   // =====================
   // Add Student
   // =====================
   const handleAddStudent = async () => {
+    if (!form.classroomId) {
+      alert("กรุณาเลือกห้องเรียน");
+      return;
+    }
+
     try {
       const res = await fetch("http://localhost:3000/students", {
         method: "POST",
@@ -93,8 +129,9 @@ export default function Student() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...form,
-          classroomId: Number(form.classroomId),
+          studentCode: form.studentCode,
+          fullName: form.fullName,
+          classroomId: form.classroomId, 
         }),
       });
 
@@ -106,7 +143,7 @@ export default function Student() {
         setForm({
           studentCode: "",
           fullName: "",
-          classroomId: 0,
+          classroomId: "",
         });
         fetchStudents();
       } else {
@@ -126,15 +163,16 @@ export default function Student() {
       alert("กรุณาเลือกไฟล์ Excel");
       return;
     }
+    if (!importClassroomId) {
+      alert("กรุณาเลือกห้องเรียนก่อนทำการนำเข้า");
+      return;
+    }
 
     try {
       const formData = new FormData();
       formData.append("file", file);
-      
-      // เพิ่ม classroomId ลงไปให้เหมือนที่ส่งผ่าน Postman (ทดสอบใส่ค่า "1")
-      formData.append("classroomId", "1"); 
+      formData.append("classroomId", importClassroomId); 
 
-      // แก้ Endpoint เป็น URL ให้ตรงกับใน Postman
       const res = await fetch("http://localhost:3000/api/students/import/students", {
         method: "POST",
         body: formData,
@@ -144,8 +182,9 @@ export default function Student() {
 
       if (res.ok) {
         alert("Import สำเร็จ");
-        setFile(null); // เคลียร์ state ไฟล์
-        fetchStudents(); // โหลดข้อมูลใหม่
+        setFile(null); 
+        setImportClassroomId("");
+        fetchStudents(); 
       } else {
         alert(data.message || "Import ไม่สำเร็จ");
       }
@@ -167,12 +206,7 @@ export default function Student() {
       >
         <Typography variant="h4">นักเรียน</Typography>
 
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-          }}
-        >
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <Button
             variant="contained"
             startIcon={<Add />}
@@ -180,6 +214,21 @@ export default function Student() {
           >
             เพิ่มนักเรียน
           </Button>
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>เลือกห้องเพื่อนำเข้า</InputLabel>
+            <Select
+              value={importClassroomId}
+              label="เลือกห้องเพื่อนำเข้า"
+              onChange={(e) => setImportClassroomId(e.target.value)}
+            >
+              {classrooms.map((room) => (
+                <MenuItem key={String(room.id)} value={String(room.id)}>
+                  {room.classroomName} 
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <Button variant="outlined" component="label">
             {file ? file.name : "เลือกไฟล์ Excel"}
@@ -201,7 +250,7 @@ export default function Student() {
           <Button
             variant="contained"
             color="success"
-            disabled={!file}
+            disabled={!file || !importClassroomId} 
             onClick={handleImport}
           >
             นำเข้า
@@ -214,9 +263,7 @@ export default function Student() {
           <TextField
             fullWidth
             label="ค้นหานักเรียน"
-            sx={{
-              mb: 3,
-            }}
+            sx={{ mb: 3 }}
           />
 
           <TableContainer component={Paper}>
@@ -232,10 +279,10 @@ export default function Student() {
 
               <TableBody>
                 {students.map((student: StudentType) => (
-                  <TableRow key={student.id}>
+                  <TableRow key={String(student.id)}>
                     <TableCell>{student.studentCode ?? student.code}</TableCell>
                     <TableCell>{student.fullName}</TableCell>
-                    <TableCell>{student.classroom?.name ?? "-"}</TableCell>
+                    <TableCell>{student.classroom?.classroomName ?? "-"}</TableCell>
                     <TableCell align="center">
                       <Button color="warning" startIcon={<Edit />}>
                         แก้ไข
@@ -246,6 +293,13 @@ export default function Student() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {students.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center">
+                      ไม่พบข้อมูลนักเรียน
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </TableContainer>
@@ -261,10 +315,7 @@ export default function Student() {
             margin="normal"
             value={form.studentCode}
             onChange={(e) =>
-              setForm({
-                ...form,
-                studentCode: e.target.value,
-              })
+              setForm({ ...form, studentCode: e.target.value })
             }
           />
           <TextField
@@ -273,25 +324,26 @@ export default function Student() {
             margin="normal"
             value={form.fullName}
             onChange={(e) =>
-              setForm({
-                ...form,
-                fullName: e.target.value,
-              })
+              setForm({ ...form, fullName: e.target.value })
             }
           />
-          <TextField
-            fullWidth
-            label="Classroom ID"
-            margin="normal"
-            type="number"
-            value={form.classroomId}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                classroomId: Number(e.target.value),
-              })
-            }
-          />
+          
+          <FormControl fullWidth margin="normal">
+            <InputLabel>ห้องเรียน</InputLabel>
+            <Select
+              value={form.classroomId}
+              label="ห้องเรียน"
+              onChange={(e) =>
+                setForm({ ...form, classroomId: e.target.value })
+              }
+            >
+              {classrooms.map((room) => (
+                <MenuItem key={String(room.id)} value={String(room.id)}>
+                  {room.classroomName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
 
         <DialogActions>

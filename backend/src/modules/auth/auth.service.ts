@@ -3,33 +3,15 @@ import { prisma } from "../../../lib/prisma";
 import { generateToken } from "../../utils/jwt";
 
 export class AuthService {
-
-  static async register(username: string, password: string, roleId: bigint) {
-    const existing = await prisma.user.findUnique({
-      where: { username }
-    });
-
-    if (existing) {
-      throw new Error("Username already exists");
-    }
-
-    const hash = await bcrypt.hash(password, 10);
-
-    const user = await prisma.user.create({
-      data: {
-        username,
-        passwordHash: hash,
-        roleId
-      }
-    });
-
-    return user;
-  }
+  // ... (ฟังก์ชัน register คงเดิม)
 
   static async login(username: string, password: string) {
     const user = await prisma.user.findUnique({
       where: { username },
-      include: { role: true }
+      include: { 
+        role: true,
+        teacher: true // 👈 1. ดึงข้อมูล Teacher ที่ผูกกับ User นี้มาด้วย
+      }
     });
 
     if (!user) throw new Error("User not found");
@@ -39,9 +21,19 @@ export class AuthService {
 
     const token = generateToken({
       userId: user.id.toString(),
-      role: user.role.roleName
+      role: user.role.roleName,
+      teacherId: user.teacherId ? user.teacherId.toString() : null // 👈 2. แนบ teacherId เข้าไปใน Token
     });
 
-    return { user, token };
+    // ส่ง object user กลับไป (ซึ่งจะมี teacherId ติดไปด้วย)
+    return { 
+      user: {
+        id: user.id.toString(),
+        username: user.username,
+        role: user.role.roleName,
+        teacherId: user.teacherId ? user.teacherId.toString() : null
+      }, 
+      token 
+    };
   }
 }

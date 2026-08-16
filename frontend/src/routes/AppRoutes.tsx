@@ -16,20 +16,21 @@ import SubjectPage from "../pages/subjects/Subject";
 import SchedulePage from "../pages/schedules/Schedule";
 import ReportPage from "../pages/reports/Reports";
 import SettingsPage from "../pages/settings/Settings";
+import UserManagement from "../pages/users/UserManagement";
 
 export default function AppRoutes() {
   return (
-
     <BrowserRouter>
-
       <Routes>
-
-        {/* Login */}
+        {/* Login - รองรับทั้ง path "/" และ "/login" */}
         <Route
           path="/"
           element={<Login />}
         />
-
+        <Route
+          path="/login"
+          element={<Login />}
+        />
 
         <Route
           element={
@@ -38,12 +39,10 @@ export default function AppRoutes() {
             </PrivateRoute>
           }
         >
-
           <Route
             path="/dashboard"
             element={<Dashboard />}
           />
-
 
           <Route
             path="/students"
@@ -81,15 +80,16 @@ export default function AppRoutes() {
           />
 
           <Route
+            path="/users"
+            element={<UserManagement />}
+          />
+
+          <Route
             path="/settings"
             element={<SettingsPage />}
           />
-
         </Route>
-
       </Routes>
-
     </BrowserRouter>
-
   );
 }

@@ -10,12 +10,13 @@ export class UserController {
         success: true,
         data: users,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
       return res.status(500).json({
         success: false,
-        message: error.message,
+        message: errorMessage,
       });
     }
   }
@@ -37,12 +38,48 @@ export class UserController {
         success: true,
         data: user,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
       return res.status(500).json({
         success: false,
-        message: error.message,
+        message: errorMessage,
+      });
+    }
+  }
+
+  static async create(req: Request, res: Response) {
+    try {
+      const { username, password, roleId } = req.body;
+
+      // ตรวจสอบข้อมูลให้ครบถ้วน รวมถึง roleId ที่จำเป็นต้องมีค่า
+      if (!username || !password || roleId === undefined || roleId === null || roleId === "") {
+        return res.status(400).json({
+          success: false,
+          message: "กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อผู้ใช้, รหัสผ่าน และสิทธิ์การใช้งาน)",
+        });
+      }
+
+      // เรียกใช้งาน UserService พร้อมส่ง roleId เป็นตัวเลขที่แน่นอน
+      const newUser = await UserService.create({
+        username,
+        password,
+        roleId: Number(roleId),
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "สร้างบัญชีผู้ใช้สำเร็จ",
+        data: newUser,
+      });
+    } catch (error: unknown) {
+      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+      return res.status(500).json({
+        success: false,
+        message: errorMessage,
       });
     }
   }
@@ -57,12 +94,13 @@ export class UserController {
         success: true,
         message: "User deleted successfully",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
       return res.status(500).json({
         success: false,
-        message: error.message,
+        message: errorMessage,
       });
     }
   }

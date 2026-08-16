@@ -50,11 +50,13 @@ export class StudentImportService {
       students.push({
         studentCode: row["เลขประจำตัว"].toString().trim(),
 
-        studentNumber: Number(row["เลขที่"]),
+        studentNumber: row["เลขที่"] ? Number(row["เลขที่"]) : null,
 
         fullName: row["ชื่อ-สกุล"].toString().trim(),
 
         classroomId,
+
+        classroomName: classroom.classroomName, // 👈 เพิ่มบรรทัดนี้ลงไปเพื่อบันทึกชื่อห้องเรียน
 
         status: true,
       });

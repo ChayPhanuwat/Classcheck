@@ -1,211 +1,161 @@
 import {
-    Box,
-    Card,
-    CardContent,
-    Grid,
-    Typography,
-    Button
+  Box,
+  Card,
+  CardContent,
+  Grid,
+  Typography,
+  Button,
 } from "@mui/material";
 
-
 import {
-    School,
-    CalendarMonth,
-    Person,
-    Lock
+  School,
+  CalendarMonth,
+  Person,
+  Lock,
 } from "@mui/icons-material";
 
+import { useNavigate } from "react-router-dom"; // นำเข้า useNavigate สำหรับเปลี่ยนหน้า
 
+export default function SettingsPage() {
+  const navigate = useNavigate(); // สร้างตัวแปรสำหรับเปลี่ยนเส้นทาง
 
-export default function SettingsPage(){
+  const settings = [
+    {
+      title: "ข้อมูลโรงเรียน",
+      description: "จัดการชื่อโรงเรียนและข้อมูลพื้นฐาน",
+      icon: <School sx={{ color: "#1976d2", fontSize: { xs: 28, sm: 32 } }} />,
+      bgColor: "#e3f2fd",
+      path: "/settings/school", // กำหนดเส้นทาง (สามารถปรับเปลี่ยนตามโปรเจกต์ของคุณ)
+    },
+    {
+      title: "ปีการศึกษา / ภาคเรียน",
+      description: "กำหนดปีการศึกษาและภาคเรียนปัจจุบัน",
+      icon: <CalendarMonth sx={{ color: "#2e7d32", fontSize: { xs: 28, sm: 32 } }} />,
+      bgColor: "#e8f5e9",
+      path: "/settings/semesters", // กำหนดเส้นทาง
+    },
+    {
+      title: "ผู้ใช้งาน",
+      description: "จัดการบัญชีและสิทธิ์ผู้ใช้งาน",
+      icon: <Person sx={{ color: "#ed6c02", fontSize: { xs: 28, sm: 32 } }} />,
+      bgColor: "#fff3e0",
+      path: "/users", // เชื่อมโยงไปหน้าจัดการผู้ใช้ที่เราเพิ่งสร้าง
+    },
+    {
+      title: "เปลี่ยนรหัสผ่าน",
+      description: "แก้ไขรหัสผ่านของบัญชี",
+      icon: <Lock sx={{ color: "#d32f2f", fontSize: { xs: 28, sm: 32 } }} />,
+      bgColor: "#ffebee",
+      path: "/settings/password", // กำหนดเส้นทาง
+    },
+  ];
 
+  return (
+    <Box sx={{ width: "100%", pb: 4 }}>
+      {/* Header */}
+      <Typography
+        variant="h4"
+        sx={{
+          mb: { xs: 2, sm: 3 },
+          fontWeight: "bold",
+          fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" },
+        }}
+      >
+        ตั้งค่า
+      </Typography>
 
-    const settings = [
-
-        {
-            title:"ข้อมูลโรงเรียน",
-            description:"จัดการชื่อโรงเรียนและข้อมูลพื้นฐาน",
-            icon:<School fontSize="large"/>
-        },
-
-
-        {
-            title:"ปีการศึกษา / ภาคเรียน",
-            description:"กำหนดปีการศึกษาและภาคเรียนปัจจุบัน",
-            icon:<CalendarMonth fontSize="large"/>
-        },
-
-
-        {
-            title:"ผู้ใช้งาน",
-            description:"จัดการบัญชีและสิทธิ์ผู้ใช้งาน",
-            icon:<Person fontSize="large"/>
-        },
-
-
-        {
-            title:"เปลี่ยนรหัสผ่าน",
-            description:"แก้ไขรหัสผ่านของบัญชี",
-            icon:<Lock fontSize="large"/>
-        }
-
-    ];
-
-
-
-
-
-    return (
-
-        <Box>
-
-
-            <Typography
-
-                variant="h5"
-
-                sx={{
-                    mb:3
+      {/* Settings Cards */}
+      <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }}>
+        {settings.map((item) => (
+          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={item.title}>
+            <Card
+              elevation={2}
+              sx={{
+                borderRadius: 2,
+                transition: "0.3s",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                "&:hover": { transform: "translateY(-4px)", boxShadow: 4 },
+              }}
+            >
+              <CardContent 
+                sx={{ 
+                  p: { xs: 2, sm: 2.5 }, 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  flexGrow: 1 
                 }}
-
-            >
-
-                ตั้งค่า
-
-            </Typography>
-
-
-
-
-
-            <Grid
-
-                container
-
-                spacing={3}
-
-            >
-
-
-
-            {
-                settings.map((item)=>(
-
-
-                    <Grid
-
-                        size={{
-
-                            xs:12,
-
-                            sm:6,
-
-                            md:3
-
-                        }}
-
-                        key={item.title}
-
-                    >
-
-
-
-                        <Card>
-
-
-
-                            <CardContent>
-
-
-
-                                <Box
-
-                                    sx={{
-
-                                        display:"flex",
-
-                                        alignItems:"center",
-
-                                        gap:2,
-
-                                        mb:2
-
-                                    }}
-
-                                >
-
-
-                                    {item.icon}
-
-
-                                    <Typography
-
-                                        variant="h6"
-
-                                    >
-
-                                        {item.title}
-
-                                    </Typography>
-
-
-                                </Box>
-
-
-
-
-                                <Typography
-
-                                    color="text.secondary"
-
-                                    sx={{
-                                        mb:2
-                                    }}
-
-                                >
-
-                                    {item.description}
-
-
-                                </Typography>
-
-
-
-
-                                <Button
-
-                                    variant="contained"
-
-                                >
-
-                                    จัดการ
-
-                                </Button>
-
-
-
-                            </CardContent>
-
-
-
-                        </Card>
-
-
-
-                    </Grid>
-
-
-                ))
-            }
-
-
-
-            </Grid>
-
-
-
-        </Box>
-
-    );
-
+              >
+                {/* Icon & Title Row */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    mb: 1.5,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      p: 1.2,
+                      borderRadius: 2,
+                      backgroundColor: item.bgColor,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {item.icon}
+                  </Box>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: "bold",
+                      fontSize: { xs: "1rem", sm: "1.125rem" },
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {item.title}
+                  </Typography>
+                </Box>
+
+                {/* Description */}
+                <Typography
+                  color="text.secondary"
+                  variant="body2"
+                  sx={{
+                    mb: 2,
+                    flexGrow: 1, // ดันปุ่มลงไปด้านล่างเสมอ
+                    fontSize: { xs: "0.875rem", sm: "0.9rem" }
+                  }}
+                >
+                  {item.description}
+                </Typography>
+
+                {/* Action Button */}
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={() => navigate(item.path)} // สั่งเปลี่ยนหน้าไปตาม path ที่กำหนด
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: "bold",
+                    "&:hover": {
+                      backgroundColor: "primary.main",
+                      color: "white",
+                    }
+                  }}
+                >
+                  จัดการ
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  );
 }

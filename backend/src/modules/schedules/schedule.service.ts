@@ -7,8 +7,15 @@ export class ScheduleService {
     });
   }
 
-  static async getAll() {
+  // 👉 ปรับแต่งเมธอด getAll ให้รับ teacherId เข้ามาเพื่อกรองข้อมูล
+  static async getAll(teacherId?: bigint | string) {
     return await prisma.schedule.findMany({
+      where: teacherId ? { teacherId: BigInt(teacherId) } : undefined, // ถ้ามี teacherId ให้กรองเฉพาะของครูคนนั้น
+      include: {
+        subject: true,
+        classroom: true,
+        teacher: true,
+      },
       orderBy: {
         id: "asc",
       },
@@ -19,6 +26,11 @@ export class ScheduleService {
     return await prisma.schedule.findUnique({
       where: {
         id,
+      },
+      include: {
+        subject: true,
+        classroom: true,
+        teacher: true,
       },
     });
   }

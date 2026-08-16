@@ -22,7 +22,11 @@ export class ScheduleController {
 
   static async getAll(req: Request, res: Response) {
     try {
-      const schedules = await ScheduleService.getAll();
+      // ดึง teacherId จาก Query Parameter (เช่น /schedules?teacherId=1)
+      const { teacherId } = req.query;
+
+      // ส่ง teacherId ไปให้ Service กรองข้อมูล
+      const schedules = await ScheduleService.getAll(teacherId as string);
 
       return res.json({
         success: true,
