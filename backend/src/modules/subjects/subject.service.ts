@@ -3,7 +3,12 @@ import { prisma } from "../../../lib/prisma";
 export class SubjectService {
   static async create(data: any) {
     return await prisma.subject.create({
-      data,
+      data: {
+        subjectCode: data.subjectCode,
+        subjectName: data.subjectName,
+        credit: Number(data.credit), // แปลงเป็น Number เพื่อรองรับ Decimal ของ Prisma
+        description: data.description || null,
+      },
     });
   }
 
@@ -28,7 +33,12 @@ export class SubjectService {
       where: {
         id,
       },
-      data,
+      data: {
+        subjectCode: data.subjectCode,
+        subjectName: data.subjectName,
+        credit: data.credit !== undefined ? Number(data.credit) : undefined,
+        description: data.description,
+      },
     });
   }
 

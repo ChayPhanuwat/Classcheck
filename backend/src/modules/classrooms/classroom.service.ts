@@ -7,8 +7,21 @@ export class ClassroomService {
     });
   }
 
-  static async getAll() {
+  static async getAll(teacherId?: string) {
+    let whereCondition: any = {};
+
+    // 🎯 ถ้ามี teacherId ส่งมา ให้กรองเฉพาะห้องที่เป็นของครูคนนี้
+    if (teacherId) {
+      whereCondition = {
+        homeroomTeacherId: BigInt(teacherId),
+      };
+    }
+
     return await prisma.classroom.findMany({
+      where: whereCondition,
+      include: {
+        homeroomTeacher: true,
+      },
       orderBy: {
         id: "asc",
       },

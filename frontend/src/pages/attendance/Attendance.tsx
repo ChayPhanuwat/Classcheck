@@ -1,263 +1,320 @@
 import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper
+    Box,
+    Button,
+    Card,
+    CardContent,
+    Typography,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    TextField,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    Grid,
 } from "@mui/material";
-import { Save } from "@mui/icons-material";
-import { useState, useEffect } from "react";
+import { Save, Book } from "@mui/icons-material";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-// =====================
-// Type Definition
-// =====================
-interface Schedule {
-  id: string | number;
-  subjectName?: string;
-  classroomName?: string;
-  title?: string; 
+// =========================
+// Type Definitions
+// =========================
+interface SubjectType {
+    id: string | number;
+    subjectCode?: string;
+    subjectName?: string;
+    code?: string;
+    name?: string;
 }
 
 interface StudentType {
-  id: string | number;
-  studentCode?: string;
-  code?: string;
-  fullName: string;
-  classroomId?: string | number;
-  status?: string; 
+    id: string | number;
+    studentCode?: string;
+    code?: string;
+    fullName: string;
+    classroomId?: string | number;
+    status?: string;
 }
 
 interface UserType {
-  id?: string | number;
-  username?: string;
-  role?: string;
-  teacherId?: string | number; // 👈 เพิ่ม teacherId สำหรับรองรับการกรองข้อมูลครู
-  [key: string]: unknown;
+    id?: string | number;
+    username?: string;
+    role?: string;
+    teacherId?: string | number;
+    [key: string]: unknown;
 }
 
 export default function Attendance() {
-  const navigate = useNavigate();
-  const [scheduleId, setScheduleId] = useState<string>(""); 
-  const [date, setDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
-
-  const [students, setStudents] = useState<StudentType[]>([]);
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-
-  // ดึงข้อมูล User ที่ล็อกอินอยู่
-  const currentUser: UserType = JSON.parse(localStorage.getItem("user") || "{}");
-
-  // =====================
-  // Load Data from API
-  // =====================
-  useEffect(() => {
-    let mounted = true;
-
-    const loadSchedules = async () => {
-      try {
-        // ตรวจสอบสิทธิ์และดึง teacherId ถ้าเป็น Teacher
-        const teacherId = currentUser.teacherId;
-        const role = currentUser.role;
-
-        let url = "http://localhost:3000/schedules";
-        // ถ้าเป็น Teacher และมี teacherId ให้ส่งแนบไปกับ Query เพื่อกรองเฉพาะของครูคนนั้น
-        if (role === "Teacher" && teacherId) {
-          url += `?teacherId=${teacherId}`;
-        }
-
-        const res = await fetch(url);
-        const data = await res.json();
-        if (mounted) {
-          setSchedules(data.data ?? data);
-        }
-      } catch (error: unknown) {
-        console.error("Failed to fetch schedules", error);
-      }
-    };
-
-    const loadStudents = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/students");
-        const data = await res.json();
-
-        if (mounted) {
-          const studentList: StudentType[] = data.data ?? data;
-          const studentsWithStatus = studentList.map(student => ({
-            ...student,
-            status: "มาเรียน"
-          }));
-
-          setStudents(studentsWithStatus);
-        }
-      } catch (error: unknown) {
-        console.error("Failed to fetch students", error);
-      }
-    };
-
-    loadSchedules();
-    loadStudents();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // =====================
-  // Handle Status Change
-  // =====================
-  const handleStatusChange = (id: string | number, newStatus: string) => {
-    setStudents(prevStudents =>
-      prevStudents.map(student =>
-        student.id === id ? { ...student, status: newStatus } : student
-      )
+    const navigate = useNavigate();
+    const [subjectId, setSubjectId] = useState<string>("");
+    const [date, setDate] = useState<string>(
+        new Date().toISOString().split("T")[0]
     );
-  };
 
-  // =====================
-  // Save Attendance & Redirect
-  // =====================
-  const handleSaveAttendance = async () => {
-    if (!scheduleId) {
-      alert("กรุณาเลือกตารางเรียน / คาบเรียนก่อนบันทึก");
-      return;
-    }
+    const [students, setStudents] = useState<StudentType[]>([]);
+    const [subjects, setSubjects] = useState<SubjectType[]>([]);
+    const [loadingSubjects, setLoadingSubjects] = useState<boolean>(true);
 
-    const attendanceData = {
-      attendanceDate: new Date(date).toISOString(),
-      scheduleId: Number(scheduleId),
-      checkedBy: Number(currentUser.id || 1),
-      records: students.map(s => ({
-        studentId: Number(s.id),
-        status: s.status
-      }))
+    // ดึงข้อมูล User จาก localStorage
+    const currentUser: UserType = useMemo(() => {
+        try {
+            return JSON.parse(localStorage.getItem("user") || "{}");
+        } catch {
+            return {};
+        }
+    }, []);
+
+    // Helper แสดงชื่อรายวิชา
+    const getSubjectLabel = (sub: SubjectType) => {
+        const code = sub.subjectCode || sub.code ? `[${sub.subjectCode || sub.code}] ` : "";
+        const name = sub.subjectName || sub.name || "ไม่ระบุชื่อวิชา";
+        return `${code}${name}`;
     };
 
-    try {
-      const response = await fetch("http://localhost:3000/attendance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(attendanceData)
-      });
+    const selectedSubject = subjects.find((s) => String(s.id) === String(subjectId));
 
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.message || "Failed to save attendance");
-      }
+    // =========================
+    // ดึงข้อมูลเฉพาะ subjects และ students
+    // =========================
+    useEffect(() => {
+        let isMounted = true;
 
-      alert("บันทึกการเข้าเรียนสำเร็จ!");
-      navigate("/reports");
+        const loadInitialData = async () => {
+            setLoadingSubjects(true);
+            try {
+                const teacherId = currentUser.teacherId;
+                const role = currentUser.role;
 
-    } catch (error: unknown) {
-      console.error("Error saving attendance:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + errorMessage);
-    }
-  };
+                let subjectUrl = "http://localhost:3000/subjects";
+                if (role === "Teacher" && teacherId) {
+                    subjectUrl += `?teacherId=${teacherId}`;
+                }
 
-  return (
-    <Box>
-      <Typography variant="h4" sx={{ mb: 3 }}>
-        เช็คชื่อเข้าเรียน
-      </Typography>
+                const [subRes, stdRes] = await Promise.all([
+                    fetch(subjectUrl),
+                    fetch("http://localhost:3000/students"),
+                ]);
 
-      <Card>
-        <CardContent>
-          <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-            <TextField
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
+                if (!subRes.ok || !stdRes.ok) {
+                    throw new Error("ไม่สามารถโหลดข้อมูลจากเซิร์ฟเวอร์ได้");
+                }
 
-            <FormControl sx={{ minWidth: 250 }}>
-              <InputLabel>ตารางเรียน / คาบเรียน</InputLabel>
-              <Select
-                value={scheduleId}
-                label="ตารางเรียน / คาบเรียน"
-                onChange={(e) => setScheduleId(e.target.value)}
-              >
-                <MenuItem value=""><em>-- กรุณาเลือกคาบเรียน --</em></MenuItem>
-                {schedules.map((sch) => (
-                  <MenuItem key={String(sch.id)} value={String(sch.id)}>
-                    {sch.title || `${sch.subjectName ?? "วิชา"} (${sch.classroomName ?? "ห้อง"})`}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
+                const subData = await subRes.json();
+                const stdData = await stdRes.json();
 
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>รหัสนักเรียน</TableCell>
-                  <TableCell>ชื่อ - สกุล</TableCell>
-                  <TableCell>สถานะการเข้าเรียน</TableCell>
-                </TableRow>
-              </TableHead>
+                if (isMounted) {
+                    const fetchedSubjects = subData.data || (Array.isArray(subData) ? subData : []);
+                    const fetchedStudents = stdData.data || (Array.isArray(stdData) ? stdData : []);
 
-              <TableBody>
-                {students.map((student) => (
-                  <TableRow key={String(student.id)}>
-                    <TableCell>{student.studentCode ?? student.code}</TableCell>
-                    <TableCell>{student.fullName}</TableCell>
-                    <TableCell>
-                      <FormControl size="small">
-                        <Select
-                          value={student.status || "มาเรียน"}
-                          onChange={(e) => handleStatusChange(student.id, e.target.value)}
-                          sx={{
-                            minWidth: 120,
-                            backgroundColor:
-                              student.status === "ขาด" ? "#ffebee" :
-                                student.status === "ลา" ? "#fff3e0" :
-                                  "#e8f5e9"
-                          }}
-                        >
-                          <MenuItem value="มาเรียน">มาเรียน</MenuItem>
-                          <MenuItem value="สาย">สาย</MenuItem>
-                          <MenuItem value="ลา">ลา</MenuItem>
-                          <MenuItem value="ขาด">ขาด</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {students.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={3} align="center">
-                      ไม่พบรายชื่อนักเรียน
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                    setSubjects(fetchedSubjects);
+                    setStudents(
+                        fetchedStudents.map((s: StudentType) => ({
+                            ...s,
+                            status: "มาเรียน",
+                        }))
+                    );
+                }
+            } catch (error: unknown) {
+                if (isMounted) {
+                    console.error("โหลดข้อมูลไม่สำเร็จ:", error);
+                }
+            } finally {
+                if (isMounted) {
+                    setLoadingSubjects(false);
+                }
+            }
+        };
 
-          <Button
-            variant="contained"
-            startIcon={<Save />}
-            sx={{ mt: 3 }}
-            onClick={handleSaveAttendance}
-          >
-            บันทึกการเข้าเรียน
-          </Button>
-        </CardContent>
-      </Card>
-    </Box>
-  );
+        loadInitialData();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [currentUser.teacherId, currentUser.role]);
+
+    // =========================
+    // เปลี่ยนสถานะการเข้าเรียน
+    // =========================
+    const handleStatusChange = (id: string | number, newStatus: string) => {
+        setStudents((prevStudents) =>
+            prevStudents.map((student) =>
+                student.id === id ? { ...student, status: newStatus } : student
+            )
+        );
+    };
+
+    // =========================
+    // บันทึกข้อมูลการเข้าเรียน
+    // =========================
+    const handleSaveAttendance = async () => {
+        if (!subjectId) {
+            alert("กรุณาเลือกรายวิชาก่อนบันทึก");
+            return;
+        }
+
+        const attendanceData = {
+            attendanceDate: new Date(date).toISOString(),
+            subjectId: Number(subjectId),
+            checkedBy: Number(currentUser.id || 1),
+            records: students.map((s) => ({
+                studentId: Number(s.id),
+                status: s.status,
+            })),
+        };
+
+        try {
+            const res = await fetch("http://localhost:3000/attendances", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(attendanceData),
+            });
+
+            const result = await res.json();
+
+            if (!res.ok) {
+                throw new Error(result.message || "บันทึกข้อมูลการเข้าเรียนไม่สำเร็จ");
+            }
+
+            alert("บันทึกการเข้าเรียนสำเร็จ!");
+            navigate("/reports");
+
+        } catch (error: unknown) {
+            console.error(error);
+            const errorMessage = error instanceof Error ? error.message : "ไม่สามารถบันทึกข้อมูลได้";
+            alert(`เกิดข้อผิดพลาด: ${errorMessage}`);
+        }
+    };
+
+    return (
+        <Box sx={{ p: 3 }}>
+            <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
+                เช็คชื่อเข้าเรียน
+            </Typography>
+
+            <Card sx={{ mb: 3 }}>
+                <CardContent>
+                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                        <Grid size={{ xs: 12, md: 4 }}>
+                            <TextField
+                                type="date"
+                                label="วันที่เช็คชื่อ"
+                                fullWidth
+                                slotProps={{ inputLabel: { shrink: true } }}
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 8 }}>
+                            <FormControl fullWidth>
+                                <InputLabel>เลือกรายวิชา</InputLabel>
+                                <Select
+                                    value={subjectId}
+                                    label="เลือกรายวิชา"
+                                    onChange={(e) => setSubjectId(e.target.value)}
+                                >
+                                    <MenuItem value="">
+                                        <em>
+                                            {loadingSubjects
+                                                ? "-- กำลังโหลดรายวิชา... --"
+                                                : subjects.length === 0
+                                                ? "-- ไม่พบข้อมูลรายวิชา --"
+                                                : "-- กรุณาเลือกวิชาที่สอน --"}
+                                        </em>
+                                    </MenuItem>
+                                    {subjects.map((sub) => (
+                                        <MenuItem key={String(sub.id)} value={String(sub.id)}>
+                                            {getSubjectLabel(sub)}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    </Grid>
+
+                    {/* การ์ดแสดงรายละเอียดรายวิชาที่เลือก */}
+                    {selectedSubject && (
+                        <Paper elevation={0} sx={{ p: 2, bgcolor: "#f5f5f5", borderRadius: 2, mb: 2 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <Book color="primary" />
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                    {getSubjectLabel(selectedSubject)}
+                                </Typography>
+                            </Box>
+                        </Paper>
+                    )}
+
+                    {/* ตารางแสดงรายชื่อนักเรียน */}
+                    <TableContainer component={Paper} variant="outlined">
+                        <Table>
+                            <TableHead>
+                                <TableRow sx={{ bgcolor: "#fafafa" }}>
+                                    <TableCell sx={{ fontWeight: "bold" }}>รหัสนักเรียน</TableCell>
+                                    <TableCell sx={{ fontWeight: "bold" }}>ชื่อ - สกุล</TableCell>
+                                    <TableCell sx={{ fontWeight: "bold" }}>สถานะการเข้าเรียน</TableCell>
+                                </TableRow>
+                            </TableHead>
+
+                            <TableBody>
+                                {students.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={3} align="center">
+                                            ไม่พบรายชื่อนักเรียน
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    students.map((student) => (
+                                        <TableRow key={String(student.id)} hover>
+                                            <TableCell>{student.studentCode ?? student.code ?? "-"}</TableCell>
+                                            <TableCell>{student.fullName}</TableCell>
+                                            <TableCell>
+                                                <FormControl size="small">
+                                                    <Select
+                                                        value={student.status || "มาเรียน"}
+                                                        onChange={(e) => handleStatusChange(student.id, e.target.value)}
+                                                        sx={{
+                                                            minWidth: 120,
+                                                            backgroundColor:
+                                                                student.status === "ขาด" ? "#ffebee" :
+                                                                student.status === "สาย" ? "#fffde7" :
+                                                                student.status === "ลา" ? "#fff3e0" :
+                                                                "#e8f5e9"
+                                                        }}
+                                                    >
+                                                        <MenuItem value="มาเรียน">มาเรียน</MenuItem>
+                                                        <MenuItem value="สาย">สาย</MenuItem>
+                                                        <MenuItem value="ลา">ลา</MenuItem>
+                                                        <MenuItem value="ขาด">ขาด</MenuItem>
+                                                    </Select>
+                                                </FormControl>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+
+                    {/* ปุ่มบันทึก */}
+                    <Button
+                        variant="contained"
+                        startIcon={<Save />}
+                        sx={{ mt: 3 }}
+                        onClick={handleSaveAttendance}
+                        disabled={!subjectId}
+                    >
+                        บันทึกการเข้าเรียน
+                    </Button>
+                </CardContent>
+            </Card>
+        </Box>
+    );
 }

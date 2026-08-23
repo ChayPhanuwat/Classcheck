@@ -36,6 +36,7 @@ interface ClassroomType {
   level?: string;
   roomNumber?: string;
   year?: number | string;
+  homeroomTeacherId?: string | number;
 }
 
 interface StudentType {
@@ -59,6 +60,20 @@ export default function Classroom() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
+  // ดึงข้อมูล User จาก LocalStorage เพื่อเอา teacherId มาใช้งาน
+  const getTeacherId = () => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return user.teacherId || null;
+      }
+    } catch (e) {
+      console.error("Failed to parse user from localStorage", e);
+    }
+    return null;
+  };
+
   // Dialog State (สำหรับเพิ่ม / แก้ไข ห้องเรียน)
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<string | number | null>(null);
@@ -76,11 +91,16 @@ export default function Classroom() {
   const [loadingStudents, setLoadingStudents] = useState<boolean>(false);
 
   // =====================
-  // 1. Fetch Classrooms Function
+  // 1. Fetch Classrooms Function (ห่อด้วย useCallback เพื่อความเสถียร)
   // =====================
   const fetchClassrooms = useCallback(async () => {
     try {
-      const res = await fetch("http://localhost:3000/classrooms");
+      const teacherId = getTeacherId();
+      const url = teacherId 
+        ? `http://localhost:3000/classrooms?teacherId=${teacherId}`
+        : "http://localhost:3000/classrooms";
+
+      const res = await fetch(url);
       const data = await res.json();
       const rawData = data.data ?? data;
 
@@ -104,7 +124,12 @@ export default function Classroom() {
     const loadInitialClassrooms = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:3000/classrooms");
+        const teacherId = getTeacherId();
+        const url = teacherId 
+          ? `http://localhost:3000/classrooms?teacherId=${teacherId}`
+          : "http://localhost:3000/classrooms";
+
+        const res = await fetch(url);
         const data = await res.json();
         const rawData = data.data ?? data;
 
@@ -130,7 +155,7 @@ export default function Classroom() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [fetchClassrooms]);
 
   // =====================
   // 3. Open / Close Classroom Dialog
@@ -171,17 +196,23 @@ export default function Classroom() {
     }
 
     try {
+      const teacherId = getTeacherId();
+      const payload = {
+        ...formData,
+        homeroomTeacherId: teacherId ? Number(teacherId) : undefined
+      };
+
       if (editingId) {
         await fetch(`http://localhost:3000/classrooms/${editingId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData)
+          body: JSON.stringify(payload)
         });
       } else {
         await fetch("http://localhost:3000/classrooms", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData)
+          body: JSON.stringify(payload)
         });
       }
 
@@ -211,7 +242,7 @@ export default function Classroom() {
   };
 
   // =====================
-  // 6. Fetch Students from "Students" API & Filter Robustly
+  // 6. Fetch Students
   // =====================
   const handleViewStudents = async (room: ClassroomType) => {
     setSelectedClassroom(room);
@@ -219,7 +250,12 @@ export default function Classroom() {
     setLoadingStudents(true);
 
     try {
-      const res = await fetch("http://localhost:3000/students");
+      const teacherId = getTeacherId();
+      const url = teacherId
+        ? `http://localhost:3000/students?teacherId=${teacherId}`
+        : "http://localhost:3000/students";
+
+      const res = await fetch(url);
       const data = await res.json();
       
       const allStudents: StudentType[] = Array.isArray(data) 
@@ -238,7 +274,7 @@ export default function Classroom() {
 
       setStudents(filteredStudents);
     } catch (error) {
-      console.error("Failed to fetch students from student page", error);
+      console.error("Failed to fetch students", error);
       setStudents([]);
     } finally {
       setLoadingStudents(false);
@@ -251,7 +287,6 @@ export default function Classroom() {
     setStudents([]);
   };
 
-  // Filter Classrooms
   const filteredClassrooms = classrooms.filter(
     (room) =>
       (room.classroomName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -260,7 +295,6 @@ export default function Classroom() {
 
   return (
     <Box>
-      {/* Header Bar */}
       <Box
         sx={{
           display: "flex",
@@ -269,14 +303,12 @@ export default function Classroom() {
           mb: 3
         }}
       >
-        <Typography variant="h4">ห้องเรียน</Typography>
-
+        <Typography variant="h4">ห้องเรียนประจำชั้น</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={handleOpenAdd}>
           เพิ่มห้องเรียน
         </Button>
       </Box>
 
-      {/* Main Content */}
       <Card>
         <CardContent>
           <TextField
@@ -313,7 +345,6 @@ export default function Classroom() {
                     <TableCell>{room.roomNumber || "-"}</TableCell>
                     <TableCell>{room.year || "-"}</TableCell>
 
-                    {/* ปุ่มดูนักเรียน */}
                     <TableCell align="center">
                       <Button
                         variant="outlined"
@@ -350,7 +381,7 @@ export default function Classroom() {
                 {filteredClassrooms.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} align="center">
-                      {loading ? "กำลังโหลดข้อมูล..." : "ไม่พบข้อมูลห้องเรียน"}
+                      {loading ? "กำลังโหลดข้อมูล..." : "ไม่พบข้อมูลห้องเรียนของคุณ"}
                     </TableCell>
                   </TableRow>
                 )}
@@ -360,7 +391,6 @@ export default function Classroom() {
         </CardContent>
       </Card>
 
-      {/* Modal Dialog สำหรับ เพิ่ม / แก้ไข ห้องเรียน */}
       <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
         <DialogTitle>{editingId ? "แก้ไขห้องเรียน" : "เพิ่มห้องเรียนใหม่"}</DialogTitle>
         <DialogContent dividers>
@@ -411,7 +441,6 @@ export default function Classroom() {
         </DialogActions>
       </Dialog>
 
-      {/* Modal Dialog สำหรับแสดงรายชื่อนักเรียน */}
       <Dialog open={openStudentDialog} onClose={handleCloseStudentDialog} fullWidth maxWidth="sm">
         <DialogTitle>
           รายชื่อนักเรียน - {selectedClassroom?.classroomName}

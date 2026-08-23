@@ -16,7 +16,7 @@ import SubjectPage from "../pages/subjects/Subject";
 import SchedulePage from "../pages/schedules/Schedule";
 import ReportPage from "../pages/reports/Reports";
 import SettingsPage from "../pages/settings/Settings";
-import UserManagement from "../pages/users/UserManagement";
+import UserManagement from "../pages/settings/UserManagement";
 
 export default function AppRoutes() {
   return (

@@ -46,7 +46,7 @@ interface StudentType {
 interface UserType {
   id?: string | number;
   username?: string;
-  role?: string;
+  role?: string | { roleName?: string };
   teacherId?: string | number;
   [key: string]: unknown;
 }
@@ -58,6 +58,7 @@ export default function Student() {
   const [file, setFile] = useState<File | null>(null);
   const [students, setStudents] = useState<StudentType[]>([]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -68,26 +69,35 @@ export default function Student() {
 
   const [importClassroomId, setImportClassroomId] = useState<string>("");
 
-  // ดึงข้อมูล User ที่ล็อกอินอยู่จาก localStorage
-  const currentUser: UserType = JSON.parse(localStorage.getItem("user") || "{}");
-
   // =====================
   // Fetch Data 
   // =====================
   const fetchStudents = async (): Promise<void> => {
     try {
-      const teacherId = currentUser.teacherId;
-      const role = currentUser.role;
+      const token = localStorage.getItem("token");
+      const userStr = localStorage.getItem("user");
+      const currentUser: UserType = userStr ? JSON.parse(userStr) : {};
 
-      // สร้าง URL สำหรับดึงข้อมูลนักเรียน
+      const teacherId = currentUser.teacherId;
+      
+      let roleName = "";
+      if (typeof currentUser.role === "string") {
+        roleName = currentUser.role;
+      } else if (currentUser.role && typeof currentUser.role === "object") {
+        roleName = currentUser.role.roleName || "";
+      }
+
       let url = "http://localhost:3000/students";
       
-      // ถ้าเป็น Teacher ให้แนบ teacherId ไปด้วย เพื่อให้ Backend กรองเฉพาะของครูคนนั้น
-      if (role === "Teacher" && teacherId) {
+      if (roleName.toLowerCase() === "teacher" && teacherId) {
         url += `?teacherId=${teacherId}`;
       }
 
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await res.json();
       setStudents(data.data ?? data);
     } catch (error) {
@@ -97,7 +107,12 @@ export default function Student() {
 
   const fetchClassrooms = async (): Promise<void> => {
     try {
-      const res = await fetch("http://localhost:3000/classrooms");
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:3000/classrooms", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await res.json();
       setClassrooms(data.data ?? data);
     } catch (error) {
@@ -123,10 +138,12 @@ export default function Student() {
     }
 
     try {
+      const token = localStorage.getItem("token");
       const res = await fetch("http://localhost:3000/students", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           studentCode: form.studentCode,
@@ -169,12 +186,16 @@ export default function Student() {
     }
 
     try {
+      const token = localStorage.getItem("token");
       const formData = new FormData();
       formData.append("file", file);
       formData.append("classroomId", importClassroomId); 
 
       const res = await fetch("http://localhost:3000/api/students/import/students", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
@@ -193,6 +214,20 @@ export default function Student() {
       alert("Backend ไม่ทำงาน");
     }
   };
+
+  // กรองรายชื่อนักเรียนตามช่องค้นหา
+  const filteredStudents = students.filter((student) => {
+    const code = String(student.studentCode ?? student.code ?? "");
+    const name = String(student.fullName ?? "");
+    const room = String(student.classroom?.classroomName ?? "");
+    const query = searchQuery.toLowerCase();
+
+    return (
+      code.toLowerCase().includes(query) ||
+      name.toLowerCase().includes(query) ||
+      room.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <Box>
@@ -262,7 +297,9 @@ export default function Student() {
         <CardContent>
           <TextField
             fullWidth
-            label="ค้นหานักเรียน"
+            label="ค้นหานักเรียน (รหัส, ชื่อ, ห้องเรียน)"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             sx={{ mb: 3 }}
           />
 
@@ -278,7 +315,7 @@ export default function Student() {
               </TableHead>
 
               <TableBody>
-                {students.map((student: StudentType) => (
+                {filteredStudents.map((student: StudentType) => (
                   <TableRow key={String(student.id)}>
                     <TableCell>{student.studentCode ?? student.code}</TableCell>
                     <TableCell>{student.fullName}</TableCell>
@@ -293,7 +330,7 @@ export default function Student() {
                     </TableCell>
                   </TableRow>
                 ))}
-                {students.length === 0 && (
+                {filteredStudents.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4} align="center">
                       ไม่พบข้อมูลนักเรียน

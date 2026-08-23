@@ -37,9 +37,9 @@ export default function Sidebar() {
   const user = userStr ? JSON.parse(userStr) : null;
   const userRole = user?.role?.roleName || user?.role; 
 
-  // กำหนดรายการเมนู พร้อมระบุสิทธิ์ (roles)
+  // กำหนดรายการเมนูหลัก พร้อมระบุสิทธิ์ (roles)
   const menu = [
-    { text: "Dashboard", icon: <Dashboard />, path: "/dashboard", roles: ["Admin"] }, // 👈 เฉพาะ Admin (ครูจะไม่เห็น)
+    { text: "Dashboard", icon: <Dashboard />, path: "/dashboard", roles: ["Admin"] }, 
     { text: "นักเรียน", icon: <People />, path: "/students", roles: ["Admin", "Teacher"] },
     { text: "ครู", icon: <School />, path: "/teachers", roles: ["Admin"] }, 
     { text: "ห้องเรียน", icon: <Class />, path: "/classrooms", roles: ["Admin", "Teacher"] },

@@ -8,45 +8,62 @@ import {
 } from "@mui/material";
 
 import {
-  School,
   CalendarMonth,
   Person,
   Lock,
+  School,
+  MenuBook,
+  EventNote,
 } from "@mui/icons-material";
 
-import { useNavigate } from "react-router-dom"; // นำเข้า useNavigate สำหรับเปลี่ยนหน้า
+import { useNavigate } from "react-router-dom";
 
 export default function SettingsPage() {
-  const navigate = useNavigate(); // สร้างตัวแปรสำหรับเปลี่ยนเส้นทาง
+  const navigate = useNavigate();
 
+  // รายการตั้งค่าทั้งหมด โดยเชื่อมโยง path ไปยังหน้าหลักที่ใช้งานร่วมกับ Sidebar
   const settings = [
-    {
-      title: "ข้อมูลโรงเรียน",
-      description: "จัดการชื่อโรงเรียนและข้อมูลพื้นฐาน",
-      icon: <School sx={{ color: "#1976d2", fontSize: { xs: 28, sm: 32 } }} />,
-      bgColor: "#e3f2fd",
-      path: "/settings/school", // กำหนดเส้นทาง (สามารถปรับเปลี่ยนตามโปรเจกต์ของคุณ)
-    },
     {
       title: "ปีการศึกษา / ภาคเรียน",
       description: "กำหนดปีการศึกษาและภาคเรียนปัจจุบัน",
       icon: <CalendarMonth sx={{ color: "#2e7d32", fontSize: { xs: 28, sm: 32 } }} />,
       bgColor: "#e8f5e9",
-      path: "/settings/semesters", // กำหนดเส้นทาง
+      path: "/settings/semesters",
+    },
+    {
+      title: "ระดับชั้นและห้องเรียน",
+      description: "จัดการข้อมูลห้องเรียนและครูประจำชั้น",
+      icon: <School sx={{ color: "#1976d2", fontSize: { xs: 28, sm: 32 } }} />,
+      bgColor: "#e3f2fd",
+      path: "/classrooms", // ลิงก์ไปหน้าห้องเรียนหลักเดียวกับ Sidebar
+    },
+    {
+      title: "รายวิชาทั้งหมด",
+      description: "จัดการกลุ่มสาระและรายวิชาที่เปิดสอน",
+      icon: <MenuBook sx={{ color: "#9c27b0", fontSize: { xs: 28, sm: 32 } }} />,
+      bgColor: "#f3e5f5",
+      path: "/subjects", // ลิงก์ไปหน้ารายวิชาหลักเดียวกับ Sidebar
+    },
+    {
+      title: "ปฏิทินการศึกษา",
+      description: "กำหนดวันเปิด-ปิดเทอมและวันหยุดพิเศษ",
+      icon: <EventNote sx={{ color: "#0288d1", fontSize: { xs: 28, sm: 32 } }} />,
+      bgColor: "#e1f5fe",
+      path: "/settings/calendar",
     },
     {
       title: "ผู้ใช้งาน",
       description: "จัดการบัญชีและสิทธิ์ผู้ใช้งาน",
       icon: <Person sx={{ color: "#ed6c02", fontSize: { xs: 28, sm: 32 } }} />,
       bgColor: "#fff3e0",
-      path: "/users", // เชื่อมโยงไปหน้าจัดการผู้ใช้ที่เราเพิ่งสร้าง
+      path: "/users",
     },
     {
       title: "เปลี่ยนรหัสผ่าน",
       description: "แก้ไขรหัสผ่านของบัญชี",
       icon: <Lock sx={{ color: "#d32f2f", fontSize: { xs: 28, sm: 32 } }} />,
       bgColor: "#ffebee",
-      path: "/settings/password", // กำหนดเส้นทาง
+      path: "/settings/password",
     },
   ];
 
@@ -127,7 +144,7 @@ export default function SettingsPage() {
                   variant="body2"
                   sx={{
                     mb: 2,
-                    flexGrow: 1, // ดันปุ่มลงไปด้านล่างเสมอ
+                    flexGrow: 1,
                     fontSize: { xs: "0.875rem", sm: "0.9rem" }
                   }}
                 >
@@ -138,7 +155,7 @@ export default function SettingsPage() {
                 <Button
                   variant="outlined"
                   fullWidth
-                  onClick={() => navigate(item.path)} // สั่งเปลี่ยนหน้าไปตาม path ที่กำหนด
+                  onClick={() => navigate(item.path)}
                   sx={{
                     borderRadius: 2,
                     textTransform: "none",

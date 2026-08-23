@@ -20,13 +20,12 @@ export class StudentController {
     }
   }
 
-  // ปรับแก้ตรงนี้: รับค่าจาก URL query
   static async getAll(req: Request, res: Response) {
     try {
-      // ดึง teacherId จาก query parameter (เช่น /students?teacherId=123)
+      // ดึง teacherId จาก query parameter (เช่น /students?teacherId=1)
       const { teacherId } = req.query;
 
-      // ส่ง teacherId ไปยัง Service
+      // ส่ง teacherId ไปยัง Service เพื่อทำการกรองข้อมูล
       const students = await StudentService.getAll(teacherId as string | undefined);
 
       return res.json({

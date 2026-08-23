@@ -9,16 +9,56 @@ import {
   Select,
   MenuItem,
   CircularProgress,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
 } from "@mui/material";
 import { People, School, Class, FactCheck } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 
-// กำหนด Interface สำหรับข้อมูล Report
+// Interface สำหรับสรุปภาพรวม
 interface ReportData {
   students: number;
   teachers: number;
   classrooms: number;
   attendanceRate: string;
+}
+
+// Interface สำหรับประวัติการเช็คชื่อที่จะนำมาแสดงใน UI
+interface AttendanceRecord {
+  id?: string | number;
+  attendanceDate?: string;
+  subjectName?: string;
+  studentName?: string;
+  status?: string;
+}
+
+// Interface สำหรับโครงสร้าง Response Data จาก Backend/Prisma
+interface RawAttendanceItem {
+  id?: string | number;
+  attendanceDate?: string;
+  date?: string;
+  createdAt?: string;
+  status?: string;
+  subjectName?: string;
+  studentName?: string;
+  schedule?: {
+    subject?: {
+      name?: string;
+    };
+  };
+  subject?: {
+    name?: string;
+  };
+  student?: {
+    firstName?: string;
+    lastName?: string;
+  };
 }
 
 export default function ReportPage() {
@@ -33,33 +73,88 @@ export default function ReportPage() {
     attendanceRate: "0%",
   });
 
-  // ใช้ async/await เพื่อให้อ่านง่ายขึ้นและจัดการ Error ได้ดีกว่า
+  const [recentAttendance, setRecentAttendance] = useState<AttendanceRecord[]>([]);
+
   useEffect(() => {
+    let isMounted = true;
+
     const fetchReportData = async () => {
       setLoading(true);
       try {
-        const res = await fetch(
-          `http://localhost:3000/api/reports?year=${year}&semester=${semester}`
-        );
-        const data = await res.json();
+        const [reportRes, attendanceRes] = await Promise.all([
+          fetch(`http://localhost:3000/api/reports?year=${year}&semester=${semester}`).catch(() =>
+            fetch(`http://localhost:3000/reports?year=${year}&semester=${semester}`)
+          ),
+          fetch(`http://localhost:3000/api/attendance`).catch(() =>
+            fetch(`http://localhost:3000/attendance`).catch(() => null)
+          ),
+        ]);
 
-        if (data?.data) {
+        if (isMounted && reportRes && reportRes.ok) {
+          const data = await reportRes.json();
+          const reportObj = data?.data || data;
           setReportData({
-            students: data.data.students || 0,
-            teachers: data.data.teachers || 0,
-            classrooms: data.data.classrooms || 0,
-            attendanceRate: data.data.attendanceRate || "0%",
+            students: reportObj.students || 0,
+            teachers: reportObj.teachers || 0,
+            classrooms: reportObj.classrooms || 0,
+            attendanceRate: reportObj.attendanceRate || "0%",
           });
+        }
+
+        if (isMounted && attendanceRes && attendanceRes.ok) {
+          const attData = await attendanceRes.json();
+          const rawList: RawAttendanceItem[] = attData?.data || (Array.isArray(attData) ? attData : []);
+
+          const formattedList: AttendanceRecord[] = rawList.map((item: RawAttendanceItem) => ({
+            id: item.id,
+            attendanceDate: item.attendanceDate || item.date || item.createdAt,
+            subjectName:
+              item.subjectName ||
+              item.schedule?.subject?.name ||
+              item.subject?.name ||
+              "-",
+            studentName:
+              item.studentName ||
+              (item.student ? `${item.student.firstName || ""} ${item.student.lastName || ""}`.trim() : "") ||
+              "-",
+            status: item.status || "-",
+          }));
+
+          setRecentAttendance(formattedList);
         }
       } catch (err) {
         console.error("Failed to fetch reports:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchReportData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [year, semester]);
+
+  const renderStatusChip = (status?: string) => {
+    switch (status) {
+      case "PRESENT":
+      case "มาเรียน":
+      case "มา":
+        return <Chip label="มาเรียน" color="success" size="small" variant="outlined" />;
+      case "LATE":
+      case "สาย":
+        return <Chip label="สาย" color="warning" size="small" variant="outlined" />;
+      case "LEAVE":
+      case "ลา":
+        return <Chip label="ลา" color="info" size="small" variant="outlined" />;
+      case "ABSENT":
+      case "ขาด":
+        return <Chip label="ขาด" color="error" size="small" variant="outlined" />;
+      default:
+        return <Chip label={status || "-"} size="small" variant="outlined" />;
+    }
+  };
 
   const reports = [
     {
@@ -84,7 +179,7 @@ export default function ReportPage() {
       title: "การเข้าเรียน",
       value: reportData.attendanceRate,
       icon: <FactCheck sx={{ color: "#9c27b0", fontSize: { xs: 32, sm: 40 } }} />,
-      bgColor: "#f3e5f5", // สีม่วงอ่อนให้เข้ากับไอคอน
+      bgColor: "#f3e5f5",
     },
   ];
 
@@ -98,14 +193,14 @@ export default function ReportPage() {
           fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" },
         }}
       >
-        รายงาน
+        รายงานสรุป
       </Typography>
 
       {/* Filter Section */}
       <Box
         sx={{
           display: "flex",
-          flexDirection: { xs: "column", sm: "row" }, // มือถือเรียงลงล่าง คอมเรียงแนวนอน
+          flexDirection: { xs: "column", sm: "row" },
           gap: 2,
           mb: 4,
         }}
@@ -142,69 +237,112 @@ export default function ReportPage() {
           <CircularProgress />
         </Box>
       ) : (
-        <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }}>
-          {reports.map((item) => (
-            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={item.title}>
-              <Card
-                elevation={2}
-                sx={{
-                  borderRadius: 2,
-                  transition: "0.3s",
-                  height: "100%",
-                  "&:hover": { transform: "translateY(-4px)", boxShadow: 4 },
-                }}
-              >
-                <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Box sx={{ minWidth: 0, pr: 1 }}>
-                      <Typography
-                        color="text.secondary"
-                        variant="subtitle1"
-                        sx={{
-                          fontWeight: "medium",
-                          fontSize: { xs: "0.875rem", sm: "1rem" },
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {item.title}
-                      </Typography>
-                      <Typography
-                        component="h2"
-                        variant="h4"
-                        sx={{
-                          mt: 0.5,
-                          fontWeight: "bold",
-                          fontSize: { xs: "1.5rem", sm: "2rem" },
-                        }}
-                      >
-                        {item.value}
-                      </Typography>
-                    </Box>
+        <>
+          <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }} sx={{ mb: 4 }}>
+            {reports.map((item) => (
+              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={item.title}>
+                <Card
+                  elevation={2}
+                  sx={{
+                    borderRadius: 2,
+                    transition: "0.3s",
+                    height: "100%",
+                    "&:hover": { transform: "translateY(-4px)", boxShadow: 4 },
+                  }}
+                >
+                  <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
                     <Box
                       sx={{
-                        p: { xs: 1.2, sm: 1.5 },
-                        borderRadius: 2,
-                        backgroundColor: item.bgColor,
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
+                        justifyContent: "space-between",
                       }}
                     >
-                      {item.icon}
+                      <Box sx={{ minWidth: 0, pr: 1 }}>
+                        <Typography
+                          color="text.secondary"
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: "medium",
+                            fontSize: { xs: "0.875rem", sm: "1rem" },
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {item.title}
+                        </Typography>
+                        <Typography
+                          component="h2"
+                          variant="h4"
+                          sx={{
+                            mt: 0.5,
+                            fontWeight: "bold",
+                            fontSize: { xs: "1.5rem", sm: "2rem" },
+                          }}
+                        >
+                          {item.value}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          p: { xs: 1.2, sm: 1.5 },
+                          borderRadius: 2,
+                          backgroundColor: item.bgColor,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {item.icon}
+                      </Box>
                     </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+
+          {/* Table Section */}
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
+              ประวัติการบันทึกการเข้าเรียนล่าสุด
+            </Typography>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: "#fafafa" }}>
+                    <TableCell sx={{ fontWeight: "bold" }}>วันที่</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>วิชา</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>นักเรียน</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>สถานะ</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {recentAttendance.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        ไม่พบข้อมูลการบันทึกการเข้าเรียน
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    recentAttendance.slice(0, 10).map((row, idx) => (
+                      <TableRow key={row.id || idx} hover>
+                        <TableCell>
+                          {row.attendanceDate
+                            ? new Date(row.attendanceDate).toLocaleDateString("th-TH")
+                            : "-"}
+                        </TableCell>
+                        <TableCell>{row.subjectName || "-"}</TableCell>
+                        <TableCell>{row.studentName || "-"}</TableCell>
+                        <TableCell>{renderStatusChip(row.status)}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </>
       )}
     </Box>
   );
