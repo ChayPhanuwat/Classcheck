@@ -107,6 +107,7 @@ model Student {
   birthDate     DateTime?
 
   classroomId   BigInt?
+  classroomName String?   @db.VarChar(100)
   studentNumber Int?
   status        Boolean   @default(true)
 

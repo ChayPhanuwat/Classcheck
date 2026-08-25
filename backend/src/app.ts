@@ -16,6 +16,7 @@ import scheduleRoutes from "./modules/schedules/schedule.routes";
 import attendanceRoutes from "./modules/attendance/attendance.routes";
 import roleRoutes from "./modules/roles/role.routes";
 import teacherImportRoutes from "./modules/teacherImport/teacherImport.routes";
+import studentImportRoutes from "./modules/studentImport/studentImport.routes";
 
 const app = express();
 
@@ -24,7 +25,12 @@ const app = express();
   return this.toString();
 };
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.json());
@@ -34,7 +40,7 @@ app.get("/", (req, res) => {
   res.json({ message: "Classcheck API 🚀" });
 });
 
-app.use("/auth", authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/students", studentRoutes);
 app.use("/teachers", teacherRoutes);
@@ -45,6 +51,7 @@ app.use("/subjects", subjectRoutes);
 app.use("/schedules", scheduleRoutes);
 app.use("/attendances", attendanceRoutes);
 app.use("/roles", roleRoutes);
-app.use("/api/import",teacherImportRoutes);
+app.use("/api/teachers/import", teacherImportRoutes);
+app.use("/api/students/import", studentImportRoutes);
 
 export default app;

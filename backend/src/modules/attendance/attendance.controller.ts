@@ -8,14 +8,15 @@ export class AttendanceController {
 
       return res.status(201).json({
         success: true,
+        message: "บันทึกการเข้าเรียนสำเร็จ",
         data: attendance,
       });
     } catch (error: any) {
-      console.error(error);
+      console.error("Create Attendance Error:", error);
 
       return res.status(500).json({
         success: false,
-        message: error.message,
+        message: error.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล",
       });
     }
   }
@@ -29,25 +30,32 @@ export class AttendanceController {
         data: attendances,
       });
     } catch (error: any) {
-      console.error(error);
+      console.error("Get All Attendance Error:", error);
 
       return res.status(500).json({
         success: false,
-        message: error.message,
+        message: error.message || "เกิดข้อผิดพลาดในการดึงข้อมูล",
       });
     }
   }
 
   static async getById(req: Request, res: Response) {
     try {
-      const id = BigInt(req.params.id as string);
+      const id = req.params.id as string;
 
-      const attendance = await AttendanceService.getById(id);
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({
+          success: false,
+          message: "รูปแบบ ID ไม่ถูกต้อง",
+        });
+      }
+
+      const attendance = await AttendanceService.getById(BigInt(id));
 
       if (!attendance) {
         return res.status(404).json({
           success: false,
-          message: "Attendance not found",
+          message: "ไม่พบข้อมูลการเข้าเรียน",
         });
       }
 
@@ -56,51 +64,66 @@ export class AttendanceController {
         data: attendance,
       });
     } catch (error: any) {
-      console.error(error);
+      console.error("Get Attendance By ID Error:", error);
 
       return res.status(500).json({
         success: false,
-        message: error.message,
+        message: error.message || "เกิดข้อผิดพลาดในการดึงข้อมูล",
       });
     }
   }
 
   static async update(req: Request, res: Response) {
     try {
-      const id = BigInt(req.params.id as string);
+      const id = req.params.id as string;
 
-      const attendance = await AttendanceService.update(id, req.body);
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({
+          success: false,
+          message: "รูปแบบ ID ไม่ถูกต้อง",
+        });
+      }
+
+      const attendance = await AttendanceService.update(BigInt(id), req.body);
 
       return res.json({
         success: true,
+        message: "แก้ไขข้อมูลสำเร็จ",
         data: attendance,
       });
     } catch (error: any) {
-      console.error(error);
+      console.error("Update Attendance Error:", error);
 
       return res.status(500).json({
         success: false,
-        message: error.message,
+        message: error.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล",
       });
     }
   }
 
   static async delete(req: Request, res: Response) {
     try {
-      const id = BigInt(req.params.id as string);
+      const id = req.params.id as string;
 
-      await AttendanceService.delete(id);
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({
+          success: false,
+          message: "รูปแบบ ID ไม่ถูกต้อง",
+        });
+      }
+
+      await AttendanceService.delete(BigInt(id));
 
       return res.json({
         success: true,
-        message: "Attendance deleted successfully",
+        message: "ลบข้อมูลการเข้าเรียนเรียบร้อยแล้ว",
       });
     } catch (error: any) {
-      console.error(error);
+      console.error("Delete Attendance Error:", error);
 
       return res.status(500).json({
         success: false,
-        message: error.message,
+        message: error.message || "เกิดข้อผิดพลาดในการลบข้อมูล",
       });
     }
   }
